@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Absensi Lapangan</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    button { padding: 15px; font-size: 16px; width: 100%; margin-top: 10px; }
+    img { width: 100%; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<h2>Absensi Lapangan</h2>
+
+<input id="nip" placeholder="NIP" style="width:100%;padding:10px"><br><br>
+<input id="job" placeholder="Customer / Job" style="width:100%;padding:10px">
+
+<button onclick="mulaiKerja()">Mulai Kerja</button>
+
+<p id="status"></p>
+<img id="preview">
+
+<script>
+let lat, lon, photoBase64;
+
+function mulaiKerja() {
+  document.getElementById("status").innerText = "Mengambil lokasi & kamera...";
+  
+  navigator.geolocation.getCurrentPosition(pos => {
+    lat = pos.coords.latitude;
+    lon = pos.coords.longitude;
+    ambilFoto();
+  }, () => alert("GPS gagal"));
+}
+
+function ambilFoto() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.capture = "user";
+  input.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      photoBase64 = reader.result;
+      document.getElementById("preview").src = photoBase64;
+      kirimData();
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+function kirimData() {
+  const data = {
+    nip: document.getElementById("nip").value,
+    job: document.getElementById("job").value,
+    lat, lon,
+    foto: photoBase64,
+    waktu: new Date().toISOString()
+  };
+
+  console.log("DATA ABSENSI:", data);
+  document.getElementById("status").innerText =
+    "Absensi tercatat\nLokasi: " + lat + "," + lon;
+}
+</script>
+
+</body>
+</html>
