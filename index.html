@@ -4,19 +4,34 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Absensi Lapangan</title>
+
+  <!-- Manifest untuk PWA (opsional tapi aman) -->
   <link rel="manifest" href="manifest.json">
+
   <style>
-    body { font-family: Arial; padding: 20px; }
-    button { padding: 15px; font-size: 16px; width: 100%; margin-top: 10px; }
-    img { width: 100%; margin-top: 10px; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    input, button {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    img {
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
 
-<h2>Absensi Lapangan</h2>
+<h2>Absensi Staff Lapangan</h2>
 
-<input id="nip" placeholder="NIP" style="width:100%;padding:10px"><br><br>
-<input id="job" placeholder="Customer / Job" style="width:100%;padding:10px">
+<input id="nip" placeholder="NIP">
+<input id="job" placeholder="Customer / Job">
 
 <button onclick="mulaiKerja()">Mulai Kerja</button>
 
@@ -24,75 +39,83 @@
 <img id="preview">
 
 <script>
-let lat, lon, photoBase64;
+let lat = "";
+let lon = "";
+let photoBase64 = "";
 
 function mulaiKerja() {
-  document.getElementById("status").innerText = "Mengambil lokasi & kamera...";
-  
-  navigator.geolocation.getCurrentPosition(pos => {
-    lat = pos.coords.latitude;
-    lon = pos.coords.longitude;
-    ambilFoto();
-  }, () => alert("GPS gagal"));
+  document.getElementById("status").innerText =
+    "Mengambil lokasi GPS...";
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      lat = pos.coords.latitude;
+      lon = pos.coords.longitude;
+      ambilFoto();
+    },
+    err => {
+      alert("GPS gagal. Aktifkan lokasi.");
+    },
+    { enableHighAccuracy: true }
+  );
 }
 
 function ambilFoto() {
+  document.getElementById("status").innerText =
+    "Ambil foto selfie...";
+
   const input = document.createElement("input");
   input.type = "file";
   input.accept = "image/*";
   input.capture = "user";
+
   input.onchange = e => {
     const file = e.target.files[0];
     const reader = new FileReader();
+
     reader.onload = () => {
       photoBase64 = reader.result;
       document.getElementById("preview").src = photoBase64;
       kirimData();
     };
+
     reader.readAsDataURL(file);
   };
+
   input.click();
 }
 
 function kirimData() {
+  document.getElementById("status").innerText =
+    "Mengirim data absensi...";
+
   const data = {
     nip: document.getElementById("nip").value,
     job: document.getElementById("job").value,
-    lat, lon,
+    latitude: lat,
+    longitude: lon,
     foto: photoBase64,
-    waktu: new Date().toISOString()
+    waktu: new Date().toISOString(),
+    device: navigator.userAgent
   };
 
-  fetch("PASTE_WEB_APP_URL_DI_SINI", {
+  fetch("https://script.google.com/macros/s/AKfycbxzfevxX7TkS5ZcXQB8YYHmxQJ1crFSfzsp2j3kQF2cX-LEANOeVvbs-KGO1cGpdTjH/exec", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify(data)
   })
   .then(res => res.json())
   .then(() => {
     document.getElementById("status").innerText =
-      "Absensi tersimpan ✔";
+      "✅ Absensi berhasil disimpan";
   })
-  .catch(() => alert("Gagal kirim data"));
+  .catch(err => {
+    alert("❌ Gagal kirim data");
+    console.error(err);
+  });
 }
-
-fetch("https://script.google.com/macros/s/AKfycbxzfevxX7TkS5ZcXQB8YYHmxQJ1crFSfzsp2j3kQF2cX-LEANOeVvbs-KGO1cGpdTjH/exec", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify(data)
-})
-.then(res => res.json())
-.then(res => {
-  document.getElementById("status").innerText =
-    "Absensi tersimpan ✔";
-})
-.catch(err => {
-  alert("Gagal kirim data");
-  console.error(err);
-});
-
 </script>
 
 </body>
