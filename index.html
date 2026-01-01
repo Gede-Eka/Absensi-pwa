@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Absensi Lapangan</title>
+  <title>Absensi Staff Lapangan</title>
 
   <link rel="manifest" href="manifest.json">
 
@@ -17,6 +17,12 @@
       padding: 14px;
       margin-top: 10px;
       font-size: 16px;
+    }
+    button {
+      background: #0a7cff;
+      color: white;
+      border: none;
+      border-radius: 6px;
     }
     img {
       width: 100%;
@@ -45,7 +51,7 @@
 <script>
 let lat, lon, photoBase64;
 
-// STEP 1: Ambil GPS
+// STEP 1: Ambil lokasi GPS
 function mulaiKerja() {
   document.getElementById("status").innerText =
     "Mengambil lokasi GPS...";
@@ -60,10 +66,10 @@ function mulaiKerja() {
   );
 }
 
-// STEP 2: Ambil & Kompres Foto (ANTI MEMORY ERROR)
+// STEP 2: Ambil foto + KOMPRES (ANTI MEMORY ERROR)
 function ambilFoto() {
   document.getElementById("status").innerText =
-    "Mengambil & mengompres foto...";
+    "Mengambil foto...";
 
   const input = document.createElement("input");
   input.type = "file";
@@ -79,7 +85,8 @@ function ambilFoto() {
 
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      const MAX_WIDTH = 800;
+
+      const MAX_WIDTH = 480;          // SUPER RINGAN
       const scale = MAX_WIDTH / img.width;
 
       canvas.width = MAX_WIDTH;
@@ -88,7 +95,8 @@ function ambilFoto() {
       const ctx = canvas.getContext("2d");
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      photoBase64 = canvas.toDataURL("image/jpeg", 0.6);
+      // JPEG quality 0.4 (aman HP RAM kecil)
+      photoBase64 = canvas.toDataURL("image/jpeg", 0.4);
 
       document.getElementById("preview").src = photoBase64;
       kirimData();
@@ -102,6 +110,9 @@ function ambilFoto() {
 
 // STEP 3: Kirim ke Google Apps Script
 function kirimData() {
+  document.getElementById("status").innerText =
+    "Mengirim data...";
+
   const data = {
     nip: document.getElementById("nip").value,
     job: document.getElementById("job").value,
@@ -111,15 +122,20 @@ function kirimData() {
     waktu: new Date().toISOString()
   };
 
-  fetch("PASTE_WEB_APP_URL_DI_SINI", {
+  fetch("https://script.google.com/macros/s/AKfycby5EE_RRX2dJC_iZt7Xs5D6KMYDxDd850d8ArmVUxE7rYG3qBAEBGjDv9q7tDUp5IAk/exec", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data)
   })
   .then(res => res.json())
-  .then(() => {
-    document.getElementById("status").innerText =
-      "✅ Absensi berhasil disimpan";
+  .then(res => {
+    if (res.status === "ok") {
+      document.getElementById("status").innerText =
+        "✅ Absensi berhasil disimpan";
+    } else {
+      document.getElementById("status").innerText =
+        "❌ Error: " + res.message;
+    }
   })
   .catch(err => {
     alert("❌ Gagal kirim data");
