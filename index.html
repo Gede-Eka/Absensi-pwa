@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Absensi Lapangan</title>
 
-  <!-- Manifest untuk PWA (opsional tapi aman) -->
   <link rel="manifest" href="manifest.json">
 
   <style>
@@ -16,16 +15,21 @@
     input, button {
       width: 100%;
       padding: 14px;
-      font-size: 16px;
       margin-top: 10px;
+      font-size: 16px;
     }
     img {
       width: 100%;
       margin-top: 10px;
       border-radius: 8px;
     }
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+    }
   </style>
 </head>
+
 <body>
 
 <h2>Absensi Staff Lapangan</h2>
@@ -39,10 +43,9 @@
 <img id="preview">
 
 <script>
-let lat = "";
-let lon = "";
-let photoBase64 = "";
+let lat, lon, photoBase64;
 
+// STEP 1: Ambil GPS
 function mulaiKerja() {
   document.getElementById("status").innerText =
     "Mengambil lokasi GPS...";
@@ -53,16 +56,14 @@ function mulaiKerja() {
       lon = pos.coords.longitude;
       ambilFoto();
     },
-    err => {
-      alert("GPS gagal. Aktifkan lokasi.");
-    },
-    { enableHighAccuracy: true }
+    () => alert("❌ GPS gagal. Aktifkan lokasi.")
   );
 }
 
+// STEP 2: Ambil & Kompres Foto (ANTI MEMORY ERROR)
 function ambilFoto() {
   document.getElementById("status").innerText =
-    "Ambil foto selfie...";
+    "Mengambil & mengompres foto...";
 
   const input = document.createElement("input");
   input.type = "file";
@@ -72,9 +73,23 @@ function ambilFoto() {
   input.onchange = e => {
     const file = e.target.files[0];
     const reader = new FileReader();
+    const img = new Image();
 
-    reader.onload = () => {
-      photoBase64 = reader.result;
+    reader.onload = ev => img.src = ev.target.result;
+
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const MAX_WIDTH = 800;
+      const scale = MAX_WIDTH / img.width;
+
+      canvas.width = MAX_WIDTH;
+      canvas.height = img.height * scale;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      photoBase64 = canvas.toDataURL("image/jpeg", 0.6);
+
       document.getElementById("preview").src = photoBase64;
       kirimData();
     };
@@ -85,25 +100,20 @@ function ambilFoto() {
   input.click();
 }
 
+// STEP 3: Kirim ke Google Apps Script
 function kirimData() {
-  document.getElementById("status").innerText =
-    "Mengirim data absensi...";
-
   const data = {
     nip: document.getElementById("nip").value,
     job: document.getElementById("job").value,
-    latitude: lat,
-    longitude: lon,
+    lat: lat,
+    lon: lon,
     foto: photoBase64,
-    waktu: new Date().toISOString(),
-    device: navigator.userAgent
+    waktu: new Date().toISOString()
   };
 
-  fetch("https://script.google.com/macros/s/AKfycbxzfevxX7TkS5ZcXQB8YYHmxQJ1crFSfzsp2j3kQF2cX-LEANOeVvbs-KGO1cGpdTjH/exec", {
+  fetch("PASTE_WEB_APP_URL_DI_SINI", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data)
   })
   .then(res => res.json())
