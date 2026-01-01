@@ -63,10 +63,36 @@ function kirimData() {
     waktu: new Date().toISOString()
   };
 
-  console.log("DATA ABSENSI:", data);
-  document.getElementById("status").innerText =
-    "Absensi tercatat\nLokasi: " + lat + "," + lon;
+  fetch("PASTE_WEB_APP_URL_DI_SINI", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(() => {
+    document.getElementById("status").innerText =
+      "Absensi tersimpan ✔";
+  })
+  .catch(() => alert("Gagal kirim data"));
 }
+
+fetch("https://script.google.com/macros/s/AKfycbxzfevxX7TkS5ZcXQB8YYHmxQJ1crFSfzsp2j3kQF2cX-LEANOeVvbs-KGO1cGpdTjH/exec", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify(data)
+})
+.then(res => res.json())
+.then(res => {
+  document.getElementById("status").innerText =
+    "Absensi tersimpan ✔";
+})
+.catch(err => {
+  alert("Gagal kirim data");
+  console.error(err);
+});
+
 </script>
 
 </body>
